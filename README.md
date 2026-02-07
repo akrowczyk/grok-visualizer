@@ -4,6 +4,10 @@ A stunning, browser-based audio visualizer powered by Grok with multiple visuali
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## 📸 Preview
+
+![Grok Neural Pulse Visualizer](docs/preview.png)
+
 ## ✨ Features
 
 - **Multiple Visualization Modes**
