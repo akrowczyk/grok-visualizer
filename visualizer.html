@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grok Neural Pulse Visualizer</title>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #ff00e6;
+            --background: #0a0a12;
+            --text: #ffffff;
+            --accent: #33ff33;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 30px;
+            opacity: 0.7;
+            text-align: center;
+        }
+
+        .visualizer-container {
+            width: 100%;
+            height: 60vh;
+            position: relative;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            background: rgba(0, 242, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border: none;
+        }
+
+        .btn-icon {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: var(--text);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .track-info {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+            min-height: 30px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .visualizer-modes {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border: none;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 18, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <h1 class="title">Grok Neural Pulse Visualizer</h1>
+        <p class="subtitle">Powered by Grok • Upload audio to experience neural-enhanced visualization</p>
+
+        <div class="upload-container">
+            <label for="fileInput" class="upload-label">
+                <span class="btn-icon">+</span> Upload Audio
+            </label>
+            <input type="file" id="fileInput" accept="audio/*">
+            <div class="track-info" id="trackInfo">No track selected</div>
+        </div>
+
+        <div class="visualizer-container">
+            <canvas id="canvas"></canvas>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="time-display">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">0:00</span>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="playBtn">
+                <span class="btn-icon">▶</span> Play
+            </button>
+
+            <div class="volume-container">
+                <span class="btn-icon">🔊</span>
+                <input type="range" min="0" max="1" step="0.01" value="0.7" class="volume-slider" id="volumeSlider">
+            </div>
+
+            <button class="btn" id="fullscreenBtn">
+                <span class="btn-icon">⛶</span> Fullscreen
+            </button>
+        </div>
+
+        <div class="visualizer-modes">
+            <button class="mode-btn active" data-mode="bars">Bars</button>
+            <button class="mode-btn" data-mode="circles">Circles</button>
+            <button class="mode-btn" data-mode="wave">Wave</button>
+            <button class="mode-btn" data-mode="particles">Particles</button>
+            <button class="mode-btn" data-mode="neural">Neural</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context and Analyzer setup
+        let audioContext;
+        let analyser;
+        let source;
+        let audioElement;
+        let frequencyData;
+        let isPlaying = false;
+        let currentMode = 'bars';
+        let animationId;
+
+        // DOM Elements
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const playBtn = document.getElementById('playBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const trackInfo = document.getElementById('trackInfo');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+        const currentTimeDisplay = document.getElementById('currentTime');
+        const totalTimeDisplay = document.getElementById('totalTime');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const particlesContainer = document.getElementById('particles');
+
+        // Initialize
+        function init() {
+            // Set canvas size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Create audio element
+            audioElement = new Audio();
+            audioElement.crossOrigin = 'anonymous';
+
+            // Event listeners
+            fileInput.addEventListener('change', handleFileUpload);
+            playBtn.addEventListener('click', togglePlay);
+            volumeSlider.addEventListener('input', handleVolumeChange);
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            progressContainer.addEventListener('click', seekAudio);
+
+            audioElement.addEventListener('timeupdate', updateProgress);
+            audioElement.addEventListener('loadedmetadata', () => {
+                updateTotalTime();
+                loadingOverlay.classList.remove('active');
+            });
+            audioElement.addEventListener('ended', () => {
+                isPlaying = false;
+                playBtn.innerHTML = '<span class="btn-icon">▶</span> Play';
+            });
+
+            // Visualizer mode buttons
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+                });
+            });
+
+            // Create particles
+            createParticles();
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+
+                // Random size between 5 and 20px
+                const size = Math.random() * 15 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+
+                // Random animation duration between 15 and 30 seconds
+                const duration = Math.random() * 15 + 15;
+                particle.style.animationDuration = `${duration}s`;
+
+                // Random delay
+                const delay = Math.random() * 10;
+                particle.style.animationDelay = `${delay}s`;
+
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loadingOverlay.classList.add('active');
+
+            const objectURL = URL.createObjectURL(file);
+            audioElement.src = objectURL;
+
+            // Display track info
+            trackInfo.textContent = file.name.replace(/\.[^/.]+$/, "");
+
+            // Reset progress
+            progressBar.style.width = '0%';
+            currentTimeDisplay.textContent = '0:00';
+
+            // Setup audio context and analyzer
+            setupAudioContext();
+
+            // Auto play when loaded
+            audioElement.addEventListener('canplaythrough', () => {
+                togglePlay();
+            }, { once: true });
+        }
+
+        function setupAudioContext() {
+            // Clean up previous context if it exists
+            if (audioContext) {
+                if (source) {
+                    source.disconnect();
+                }
+                cancelAnimationFrame(animationId);
+            }
+
+            // Create new audio context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+
+            // Connect audio element to analyzer
+            source = audioContext.createMediaElementSource(audioElement);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            // Set analyzer properties
+            analyser.fftSize = 2048;
+            const bufferLength = analyser.frequencyBinCount;
+            frequencyData = new Uint8Array(bufferLength);
+
+            // Start visualization
+            visualize();
+        }
+
+        function togglePlay() {
+            if (!audioElement.src) {
+                alert('Please upload an audio file first');
+                return;
+            }
+
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            if (isPlaying) {
+                audioElement.pause();
+                playBtn.innerHTML = '<span class="btn-icon">▶</span> Play';
+            } else {
+                audioElement.play();
+                playBtn.innerHTML = '<span class="btn-icon">⏸</span> Pause';
+            }
+
+            isPlaying = !isPlaying;
+        }
+
+        function handleVolumeChange() {
+            audioElement.volume = volumeSlider.value;
+        }
+
+        function toggleFullscreen() {
+            const container = document.querySelector('.visualizer-container');
+
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        function updateProgress() {
+            const progress = (audioElement.currentTime / audioElement.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            // Update current time display
+            const minutes = Math.floor(audioElement.currentTime / 60);
+            const seconds = Math.floor(audioElement.currentTime % 60).toString().padStart(2, '0');
+            currentTimeDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        function updateTotalTime() {
+            const minutes = Math.floor(audioElement.duration / 60);
+            const seconds = Math.floor(audioElement.duration % 60).toString().padStart(2, '0');
+            totalTimeDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        function seekAudio(e) {
+            const percent = e.offsetX / progressContainer.offsetWidth;
+            audioElement.currentTime = percent * audioElement.duration;
+        }
+
+        // Visualization functions
+        function visualize() {
+            animationId = requestAnimationFrame(visualize);
+
+            // Get frequency data
+            analyser.getByteFrequencyData(frequencyData);
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Choose visualization based on current mode
+            switch (currentMode) {
+                case 'bars':
+                    drawBars();
+                    break;
+                case 'circles':
+                    drawCircles();
+                    break;
+                case 'wave':
+                    drawWave();
+                    break;
+                case 'particles':
+                    drawParticles();
+                    break;
+                case 'neural':
+                    drawNeural();
+                    break;
+            }
+        }
+
+        function drawBars() {
+            const barWidth = canvas.width / (frequencyData.length / 4);
+            const barSpacing = 1;
+            const barCount = Math.floor(canvas.width / (barWidth + barSpacing));
+            const step = Math.floor(frequencyData.length / barCount);
+
+            for (let i = 0; i < barCount; i++) {
+                const index = i * step;
+                const value = frequencyData[index];
+                const percent = value / 255;
+                const height = canvas.height * percent * 0.8;
+                const x = i * (barWidth + barSpacing);
+                const y = canvas.height - height;
+
+                // Create gradient
+                const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                gradient.addColorStop(0, '#00f2ff');
+                gradient.addColorStop(1, '#ff00e6');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, y, barWidth, height);
+
+                // Add glow effect
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+            }
+
+            // Reset shadow
+            ctx.shadowBlur = 0;
+        }
+
+        function drawCircles() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxRadius = Math.min(canvas.width, canvas.height) / 2 * 0.8;
+
+            // Get average frequency for overall intensity
+            let sum = 0;
+            for (let i = 0; i < frequencyData.length; i++) {
+                sum += frequencyData[i];
+            }
+            const average = sum / frequencyData.length;
+            const intensity = average / 255;
+
+            // Draw multiple circles
+            const circleCount = 5;
+            for (let i = 0; i < circleCount; i++) {
+                const radius = maxRadius * ((i + 1) / circleCount);
+                const freqIndex = Math.floor(frequencyData.length * (i / circleCount));
+                const value = frequencyData[freqIndex];
+                const percent = value / 255;
+
+                // Adjust radius based on frequency
+                const adjustedRadius = radius * (0.8 + percent * 0.2);
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, adjustedRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(${0 + i * 50}, ${242 - i * 20}, ${255 - i * 30}, ${0.2 + percent * 0.8})`;
+                ctx.lineWidth = 2 + percent * 5;
+                ctx.stroke();
+            }
+
+            // Draw center circle with pulsing effect
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, maxRadius * 0.1 * (1 + intensity * 0.5), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 0, 230, ${0.5 + intensity * 0.5})`;
+            ctx.fill();
+        }
+
+        function drawWave() {
+            const time = Date.now() / 1000;
+            const layers = 3;
+
+            for (let layer = 0; layer < layers; layer++) {
+                const layerOffset = layer * 20;
+                const amplitude = 0.3 - layer * 0.1;
+                const frequency = 1 + layer * 0.5;
+                const speed = 2 + layer;
+
+                ctx.beginPath();
+                const sliceWidth = canvas.width / frequencyData.length;
+                let x = 0;
+
+                for (let i = 0; i < frequencyData.length; i++) {
+                    const value = frequencyData[i];
+                    const percent = value / 255;
+
+                    // Create complex wave pattern
+                    const baseY = canvas.height / 2;
+                    const wave1 = Math.sin(x * 0.01 * frequency + time * speed) * canvas.height * amplitude;
+                    const wave2 = Math.sin(x * 0.02 * frequency + time * (speed + 1)) * canvas.height * amplitude * 0.5;
+                    const audioEffect = (percent * canvas.height / 2 - canvas.height / 4) * (1 - layer * 0.3);
+
+                    const y = baseY + wave1 + wave2 + audioEffect + layerOffset;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.bezierCurveTo(
+                            x - sliceWidth * 0.5, y - 5,
+                            x - sliceWidth * 0.5, y + 5,
+                            x, y
+                        );
+                    }
+
+                    x += sliceWidth;
+                }
+
+                // Complete the wave
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+
+                // Create dynamic gradient
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                const alpha = 0.8 - layer * 0.2;
+                gradient.addColorStop(0, `rgba(255, 0, 230, ${alpha})`);
+                gradient.addColorStop(0.5, `rgba(0, 242, 255, ${alpha * 0.6})`);
+                gradient.addColorStop(1, `rgba(255, 0, 230, ${alpha * 0.3})`);
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Add glow effect
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = layer === 0 ? '#ff00e6' : '#00f2ff';
+
+                // Draw highlight line
+                ctx.beginPath();
+                x = 0;
+                for (let i = 0; i < frequencyData.length; i++) {
+                    const value = frequencyData[i];
+                    const percent = value / 255;
+                    const baseY = canvas.height / 2;
+                    const wave1 = Math.sin(x * 0.01 * frequency + time * speed) * canvas.height * amplitude;
+                    const wave2 = Math.sin(x * 0.02 * frequency + time * (speed + 1)) * canvas.height * amplitude * 0.5;
+                    const audioEffect = (percent * canvas.height / 2 - canvas.height / 4) * (1 - layer * 0.3);
+
+                    const y = baseY + wave1 + wave2 + audioEffect + layerOffset;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+
+                    // Add energy bursts
+                    if (percent > 0.7 && layer === 0) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, percent * 20, 0, Math.PI * 2);
+                        const burstGradient = ctx.createRadialGradient(x, y, 0, x, y, percent * 20);
+                        burstGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                        burstGradient.addColorStop(0.5, 'rgba(0, 242, 255, 0.4)');
+                        burstGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                        ctx.fillStyle = burstGradient;
+                        ctx.fill();
+                    }
+
+                    x += sliceWidth;
+                }
+
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 - layer * 0.2})`;
+                ctx.lineWidth = 2 - layer * 0.5;
+                ctx.stroke();
+            }
+
+            // Reset shadow
+            ctx.shadowBlur = 0;
+        }
+
+        function drawParticles() {
+            const time = Date.now() / 1000;
+
+            // Get average frequency for overall intensity
+            let sum = 0;
+            for (let i = 0; i < frequencyData.length; i++) {
+                sum += frequencyData[i];
+            }
+            const average = sum / frequencyData.length;
+            const intensity = average / 255;
+
+            // Number of particles based on intensity
+            const particleCount = Math.floor(100 + intensity * 150);
+
+            for (let i = 0; i < particleCount; i++) {
+                const freqIndex = Math.floor(i * frequencyData.length / particleCount);
+                const value = frequencyData[freqIndex];
+                const percent = value / 255;
+
+                // Dynamic particle properties
+                const life = ((i + time) % particleCount) / particleCount;
+                const size = (2 + percent * 6) * (1 - life * 0.5);
+                const opacity = (0.4 + percent * 0.6) * (1 - life);
+
+                // Swirling movement pattern
+                const angle = (i / particleCount) * Math.PI * 2 + time * (1 + percent);
+                const spiralOffset = life * 200;
+                const distance = 50 + spiralOffset + percent * 150;
+                const wobble = Math.sin(time * 2 + i) * 20 * percent;
+
+                const x = canvas.width / 2 + Math.cos(angle) * (distance + wobble);
+                const y = canvas.height / 2 + Math.sin(angle) * (distance + wobble);
+
+                // Create particle gradient
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
+                gradient.addColorStop(0.4, `rgba(0, 242, 255, ${opacity * 0.8})`);
+                gradient.addColorStop(1, `rgba(255, 0, 230, ${opacity * 0.2})`);
+
+                // Draw particle with glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = percent > 0.7 ? '#ff00e6' : '#00f2ff';
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Add connecting lines with dynamic properties
+                if (i > 0 && i % 3 === 0) {
+                    const prevIndex = i - 3;
+                    const prevLife = ((prevIndex + time) % particleCount) / particleCount;
+                    const prevAngle = (prevIndex / particleCount) * Math.PI * 2 + time * (1 + percent);
+                    const prevDistance = 50 + prevLife * 200 + percent * 150;
+                    const prevWobble = Math.sin(time * 2 + prevIndex) * 20 * percent;
+
+                    const prevX = canvas.width / 2 + Math.cos(prevAngle) * (prevDistance + prevWobble);
+                    const prevY = canvas.height / 2 + Math.sin(prevAngle) * (prevDistance + prevWobble);
+
+                    // Create line gradient
+                    const lineGradient = ctx.createLinearGradient(prevX, prevY, x, y);
+                    lineGradient.addColorStop(0, `rgba(0, 242, 255, ${opacity * 0.3})`);
+                    lineGradient.addColorStop(1, `rgba(255, 0, 230, ${opacity * 0.3})`);
+
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(x, y);
+                    ctx.strokeStyle = lineGradient;
+                    ctx.lineWidth = 1 + percent;
+                    ctx.stroke();
+                }
+
+                // Add energy bursts for high-intensity frequencies
+                if (percent > 0.8) {
+                    const burstSize = size * 3;
+                    const burstGradient = ctx.createRadialGradient(x, y, 0, x, y, burstSize);
+                    burstGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                    burstGradient.addColorStop(0.5, 'rgba(0, 242, 255, 0.4)');
+                    burstGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, burstSize, 0, Math.PI * 2);
+                    ctx.fillStyle = burstGradient;
+                    ctx.fill();
+                }
+            }
+
+            // Reset shadow
+            ctx.shadowBlur = 0;
+        }
+
+        function drawNeural() {
+            const time = Date.now() / 1000;
+            const layers = 4;
+            const nodesPerLayer = [8, 12, 12, 8];
+            const layerSpacing = canvas.width / (layers + 1);
+
+            // Create breathing effect
+            const breathe = Math.sin(time) * 0.2 + 1;
+
+            // Draw connections first (behind nodes)
+            for (let layer = 0; layer < layers - 1; layer++) {
+                const startX = (layer + 1) * layerSpacing;
+                const endX = (layer + 2) * layerSpacing;
+
+                for (let i = 0; i < nodesPerLayer[layer]; i++) {
+                    const startY = (i + 1) * (canvas.height / (nodesPerLayer[layer] + 1));
+
+                    for (let j = 0; j < nodesPerLayer[layer + 1]; j++) {
+                        const endY = (j + 1) * (canvas.height / (nodesPerLayer[layer + 1] + 1));
+
+                        // Get frequency data for this connection
+                        const freqIndex = Math.floor((i + j) * frequencyData.length / (nodesPerLayer[layer] + nodesPerLayer[layer + 1]));
+                        const value = frequencyData[freqIndex];
+                        const intensity = value / 255;
+
+                        // Draw connection line with gradient
+                        const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+                        gradient.addColorStop(0, `rgba(0, 242, 255, ${0.1 + intensity * 0.3})`);
+                        gradient.addColorStop(1, `rgba(255, 0, 230, ${0.1 + intensity * 0.3})`);
+
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(endX, endY);
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = 0.5 * breathe;
+                        ctx.stroke();
+
+                        // Animated signal pulses
+                        const pulseCount = Math.floor(intensity * 3);
+                        for (let p = 0; p < pulseCount; p++) {
+                            const pulseOffset = ((time * (1 + intensity) + p / pulseCount) % 1);
+                            const pulseX = startX + (endX - startX) * pulseOffset;
+                            const pulseY = startY + (endY - startY) * pulseOffset;
+
+                            ctx.beginPath();
+                            ctx.arc(pulseX, pulseY, (2 + intensity * 3) * breathe, 0, Math.PI * 2);
+                            const pulseGradient = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, 6 * breathe);
+                            pulseGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                            pulseGradient.addColorStop(0.5, `rgba(0, 242, 255, ${0.4 * intensity})`);
+                            pulseGradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
+                            ctx.fillStyle = pulseGradient;
+                            ctx.fill();
+                        }
+                    }
+                }
+            }
+
+            // Draw nodes
+            for (let layer = 0; layer < layers; layer++) {
+                const x = (layer + 1) * layerSpacing;
+
+                for (let i = 0; i < nodesPerLayer[layer]; i++) {
+                    const y = (i + 1) * (canvas.height / (nodesPerLayer[layer] + 1));
+
+                    // Get frequency data for this node
+                    const freqIndex = Math.floor(i * frequencyData.length / nodesPerLayer[layer]);
+                    const value = frequencyData[freqIndex];
+                    const intensity = value / 255;
+
+                    // Random spark connections
+                    if (Math.random() < 0.02 * intensity) {
+                        const targetLayer = Math.floor(Math.random() * layers);
+                        const targetNode = Math.floor(Math.random() * nodesPerLayer[targetLayer]);
+                        const targetX = (targetLayer + 1) * layerSpacing;
+                        const targetY = (targetNode + 1) * (canvas.height / (nodesPerLayer[targetLayer] + 1));
+
+                        const gradient = ctx.createLinearGradient(x, y, targetX, targetY);
+                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                        gradient.addColorStop(1, 'rgba(255, 0, 230, 0)');
+
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(targetX, targetY);
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([2, 3]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
+                    // Node outer glow
+                    const glowRadius = (10 + intensity * 5) * breathe;
+                    ctx.beginPath();
+                    ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
+                    const glowGradient = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
+                    glowGradient.addColorStop(0, `rgba(0, 242, 255, ${0.4 + intensity * 0.6})`);
+                    glowGradient.addColorStop(0.5, `rgba(255, 0, 230, ${0.2 + intensity * 0.3})`);
+                    glowGradient.addColorStop(1, 'rgba(0, 242, 255, 0)');
+                    ctx.fillStyle = glowGradient;
+                    ctx.fill();
+
+                    // Node core
+                    const coreRadius = (4 + intensity * 2) * breathe;
+                    ctx.beginPath();
+                    ctx.arc(x, y, coreRadius, 0, Math.PI * 2);
+                    const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, coreRadius);
+                    coreGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                    coreGradient.addColorStop(0.5, `rgba(0, 242, 255, ${0.8 + intensity * 0.2})`);
+                    coreGradient.addColorStop(1, `rgba(255, 0, 230, ${0.6 + intensity * 0.4})`);
+                    ctx.fillStyle = coreGradient;
+                    ctx.fill();
+
+                    // Activation burst effect
+                    if (intensity > 0.7) {
+                        const burstRadius = 20 * intensity * breathe;
+                        ctx.beginPath();
+                        ctx.arc(x, y, burstRadius, 0, Math.PI * 2);
+                        const burstGradient = ctx.createRadialGradient(x, y, 0, x, y, burstRadius);
+                        burstGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+                        burstGradient.addColorStop(0.3, `rgba(0, 242, 255, ${0.3 * intensity})`);
+                        burstGradient.addColorStop(0.7, `rgba(255, 0, 230, ${0.2 * intensity})`);
+                        burstGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                        ctx.fillStyle = burstGradient;
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+
+</html>
